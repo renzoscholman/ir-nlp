@@ -12,6 +12,9 @@ def extract_article_headers(data_path, headers):
 
 		return rows
 
+def extract_header_column(data, header_index):
+	return list(map(lambda row: row[header_index], data[1:]))
+
 def extract_questionmark_features(data, header_index):
 	features = []
 	for i, row in enumerate(data):
@@ -23,11 +26,8 @@ def extract_questionmark_features(data, header_index):
 		features.append(has_questionmark)
 	return features
 
-
 headers = ['articleHeadline', 'articleHeadlineStance']
 data = extract_article_headers(DATA_PATH, headers)
-print(f'- Headers: {data[0]}')
-print(f'- First row: {data[1]}')
 
 questionmark_features = extract_questionmark_features(data, headers.index('articleHeadline'))
 count_true = len(list(filter(lambda x: x, questionmark_features)))
