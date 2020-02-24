@@ -7,5 +7,5 @@ class BoW:
         self.max_features = max_features
 
     def fit(self, data):
-        v = CountVectorizer(ngram_range=self.ngram_range, max_features=self.max_features)
+        v = CountVectorizer(ngram_range=self.ngram_range, max_features=self.max_features, stop_words=['the', 'of', 'and'])
         return v.fit_transform(data)
