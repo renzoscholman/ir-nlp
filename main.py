@@ -12,7 +12,8 @@ def extract_article_headers(data_path, headers):
 
 		return rows
 
-def extract_header_column(data, header_index):
+def extract_column(data, header_index):
+	# Extract a column without the header
 	return list(map(lambda row: row[header_index], data[1:]))
 
 def extract_questionmark_features(data, header_index):
