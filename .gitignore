@@ -1,2 +1,3 @@
 # Ignore jetbrains IDE's
 .idea
+env/
