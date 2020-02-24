@@ -1,5 +1,6 @@
 from sklearn.feature_extraction.text import CountVectorizer
 
+
 class BoW:
     def __init__(self, ngram_range, max_features):
         self.ngram_range = ngram_range
