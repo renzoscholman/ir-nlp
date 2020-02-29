@@ -11,6 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
 from bow import BoW
+from cross_val import cv_fold_generator
 
 DATA_PATH = './data/url-versions-2015-06-14-clean.csv'
 
@@ -38,13 +39,13 @@ def extract_questionmark_features(data, header_index):
     return sparse.csr_matrix(np.array([features]).T)
 
 
-def logistic_regression(data, target):
+def logistic_regression(data, target, folds):
     clf = LogisticRegression(multi_class="ovr")
-    return kfold_cross(clf, data, target)
+    return kfold_cross(clf, data, target, folds)
 
 
-def kfold_cross(clf, data, target):
-    cv = cross_validate(clf, data, target, cv=10, scoring=['accuracy', 'f1_macro', 'recall_macro', 'precision_macro'])
+def kfold_cross(clf, data, target, folds=10):
+    cv = cross_validate(clf, data, target, cv=folds, scoring=['accuracy', 'f1_macro', 'recall_macro', 'precision_macro'])
     accuracy  = np.mean(cv['test_accuracy'])
     f1 = np.mean(cv['test_f1_macro'])
     recall = np.mean(cv['test_recall_macro'])
@@ -56,19 +57,20 @@ def add_question_mark_feature(data, questionmark_features):
     return sparse.hstack((data, questionmark_features))
 
 
-def grid_search_bow(data, target, questionmark_features):
+def grid_search_bow(data, target, ids, questionmark_features):
     ngram_range = [(1, 1), (1, 2), (2, 2), (1, 3), (2, 3), (3, 3)]
-    max_features = range(80,120)
+    max_features = range(80, 95)
+    custom_folds = cv_fold_generator(ids, 10)
     res = []
     count = 0
     for i in ngram_range:
         for j in max_features:
             print(count / (len(max_features) * len(ngram_range)))
             count += 1
-            bow = BoW(ngram_range=i, max_features=j)
+            bow = BoW(ngram_range=i, max_features=j, stop_words=None)
             x = bow.fit(data)
             combined = add_question_mark_feature(x, questionmark_features)
-            res.append([logistic_regression(combined, target), i, j])
+            res.append([logistic_regression(combined, target, custom_folds), i, j])
 
     print(sorted(res, key=lambda x: x[0], reverse=True))
 
@@ -76,10 +78,11 @@ def grid_search_bow(data, target, questionmark_features):
 def split_data(data):
     y = list(map(lambda row: row[1], data))
     x = list(map(lambda row: row[0], data))
-    return x[1:], y[1:]
+    ids = list(map(lambda row: row[2], data))
+    return x[1:], y[1:], ids[1:]
 
 
-data = extract_article_headers(DATA_PATH, ['articleHeadline', 'articleHeadlineStance'])
+data = extract_article_headers(DATA_PATH, ['articleHeadline', 'articleHeadlineStance', 'claimId'])
 
 print(f'Headers: {data[0]}')
 print(f'First row: {data[1]}')
@@ -91,5 +94,7 @@ data = split_data(data)
 
 x = data[0]
 y = data[1]
+ids = data[2]
 
-grid_search_bow(x, y, questionmark_features)
+
+grid_search_bow(x, y, ids, questionmark_features)
