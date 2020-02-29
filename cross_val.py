@@ -20,7 +20,7 @@ def cv_fold_generator(data, n_folds=10):
     claim_list = list(claim_dict.items())
 
     # Shuffle list for randomization, use seed for reproducibility
-    random.seed(0)
+    random.seed(1)
     random.shuffle(claim_list)
 
     # Placeholder for folds

@@ -57,10 +57,10 @@ def add_question_mark_feature(data, questionmark_features):
     return sparse.hstack((data, questionmark_features))
 
 
-def grid_search_bow(data, target, ids, questionmark_features):
+def grid_search_bow(data, target, ids, questionmark_features, folds=10, do_custom_folds=True):
     ngram_range = [(1, 1), (1, 2), (2, 2), (1, 3), (2, 3), (3, 3)]
     max_features = range(80, 95)
-    custom_folds = cv_fold_generator(ids, 10)
+    custom_folds = cv_fold_generator(ids, folds)
     res = []
     count = 0
     for i in ngram_range:
@@ -70,7 +70,10 @@ def grid_search_bow(data, target, ids, questionmark_features):
             bow = BoW(ngram_range=i, max_features=j, stop_words=None)
             x = bow.fit(data)
             combined = add_question_mark_feature(x, questionmark_features)
-            res.append([logistic_regression(combined, target, custom_folds), i, j])
+            if do_custom_folds:
+                res.append([logistic_regression(combined, target, custom_folds), i, j])
+            else:
+                res.append([logistic_regression(combined, target, folds), i, j])
 
     print(sorted(res, key=lambda x: x[0], reverse=True))
 
