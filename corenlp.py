@@ -1,4 +1,26 @@
 import stanfordnlp
+import numpy as np
+import warnings
+
+
+def get_rootdist_matrix(data, column):
+    nlp = NLPRootDist()
+    total = len(data)
+    matrix = np.zeros((total, 2))
+    # Ignore UserWarning because nlp.parse throws a warning due to wrong data type,
+    # but we have no control over Stanford CoreNLP code
+    warnings.simplefilter("ignore", UserWarning)
+    for j in range(total):
+        # Add small progress notification during processing
+        if j % 50 == 0:
+            print("Calculating rootdist, at: ", "{0:.2f}".format((j/total)*100.0), "% (", j, " of ", total, ")")
+        hedge, refute = nlp.parse(data[j][column])
+        matrix[j, 0] = hedge
+        matrix[j, 1] = refute
+    # Reset the filter for UserWarnings as we are done with the Stanford CoreNLP
+    warnings.simplefilter("default", UserWarning)
+    return matrix
+
 
 class NLPRootDist:
     # Can be initiated with other models location and other treebanks (en_ewt, en_gum, en_lines)
