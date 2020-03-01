@@ -1,14 +1,11 @@
 import csv
 
-from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV, cross_val_score
 from sklearn.model_selection import cross_validate
-from sklearn.pipeline import FeatureUnion
-from sklearn import svm
 from scipy import sparse
-from sklearn.ensemble import RandomForestClassifier
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 from bow import BoW
 
@@ -57,21 +54,50 @@ def add_question_mark_feature(data, questionmark_features):
 
 
 def grid_search_bow(data, target, questionmark_features):
-    ngram_range = [(1, 1), (1, 2), (2, 2), (1, 3), (2, 3), (3, 3)]
-    max_features = range(80,120)
+    ngram_range = [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)]
+    max_features = [5,10,100,200,300,400,500,600,700,800,900,1000]
     res = []
     count = 0
+
     for i in ngram_range:
         for j in max_features:
             print(count / (len(max_features) * len(ngram_range)))
             count += 1
             bow = BoW(ngram_range=i, max_features=j)
-            x = bow.fit(data)
-            combined = add_question_mark_feature(x, questionmark_features)
-            res.append([logistic_regression(combined, target), i, j])
+
+            d = bow.fit(data)
+            # combined = add_question_mark_feature(d, questionmark_features)
+
+            r = logistic_regression(d, target)
+            res.append([r, i, j])
+
+    plot_grid_search_bow(res, ngram_range, max_features)
 
     print(sorted(res, key=lambda x: x[0], reverse=True))
 
+
+def plot_grid_search_bow(results, ngram_range, max_features):
+    x = []
+    y = []
+    z = []
+    index = 0
+    for i in range(0, len(ngram_range)):
+        for j in max_features:
+            x.append(i)
+            y.append(j)
+            z.append(results[index][0][0])
+            index += 1
+
+    fig = plt.figure()
+    labels = ['(1, 1)', '(1, 2)', '(1, 3)', '(2, 2)', '(2, 3)', '(3, 3)']
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xticks([0,1,2,3,4,5])
+    ax.set_xticklabels(labels)
+    ax.scatter(x, y, z)
+    ax.set_xlabel("N-gram range")
+    ax.set_ylabel("Max features")
+    ax.set_zlabel("Accuracy")
+    fig.show()
 
 def split_data(data):
     y = list(map(lambda row: row[1], data))
