@@ -42,14 +42,13 @@ def get_rootdist_matrix():
     return mat
 
 
-def crossval_rootdist(data, target, ids, questionmark_features, folds=10, do_custom_folds=True):
+def crossval_rootdist(data, target, ids, questionmark_features=None, folds=10, do_custom_folds=True):
     custom_folds = cv_fold_generator(ids, folds)
     data = sparse.csr_matrix(data)
-    if np.size(questionmark_features):
+    if questionmark_features is not None:
         combined = add_question_mark_feature(data, questionmark_features)
     else:
         combined = data
-
     print('accuracy', 'f1_macro', 'recall_macro', 'precision_macro')
     if do_custom_folds:
         print(logistic_regression(combined, target, custom_folds))
