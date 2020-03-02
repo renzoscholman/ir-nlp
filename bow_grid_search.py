@@ -85,19 +85,20 @@ def split_data(data):
     return x[1:], y[1:], ids[1:]
 
 
-data = extract_article_headers(DATA_PATH, ['articleHeadline', 'articleHeadlineStance', 'claimId'])
+if __name__ == "__main__":
+    data = extract_article_headers(DATA_PATH, ['articleHeadline', 'articleHeadlineStance', 'claimId'])
 
-print(f'Headers: {data[0]}')
-print(f'First row: {data[1]}')
+    print(f'Headers: {data[0]}')
+    print(f'First row: {data[1]}')
 
-headers = ['articleHeadline', 'articleHeadlineStance']
-questionmark_features = extract_questionmark_features(data, headers.index('articleHeadline'))
+    headers = ['articleHeadline', 'articleHeadlineStance']
+    questionmark_features = extract_questionmark_features(data, headers.index('articleHeadline'))
 
-data = split_data(data)
+    data = split_data(data)
 
-x = data[0]
-y = data[1]
-ids = data[2]
+    x = data[0]
+    y = data[1]
+    ids = data[2]
 
 
-grid_search_bow(x, y, ids, questionmark_features)
+    grid_search_bow(x, y, ids, questionmark_features)
