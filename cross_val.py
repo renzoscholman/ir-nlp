@@ -11,7 +11,7 @@ def cv_fold_generator(data, n_folds=10):
     for i in range(0, len(data)):
         claim_id = data[i]
         index = i
-        if not claim_id in claim_dict:
+        if claim_id not in claim_dict:
             claim_dict[claim_id] = [index]
         else:
             claim_dict[claim_id].append(index)

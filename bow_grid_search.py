@@ -1,5 +1,7 @@
 import csv
 
+import matplotlib.pyplot as plt
+from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, cross_val_score
@@ -9,6 +11,7 @@ from sklearn import svm
 from scipy import sparse
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
+from sklearn.preprocessing import normalize
 
 from bow import BoW
 from cross_val import cv_fold_generator
@@ -45,8 +48,9 @@ def logistic_regression(data, target, folds):
 
 
 def kfold_cross(clf, data, target, folds=10):
-    cv = cross_validate(clf, data, target, cv=folds, scoring=['accuracy', 'f1_macro', 'recall_macro', 'precision_macro'])
-    accuracy  = np.mean(cv['test_accuracy'])
+    cv = cross_validate(clf, data, target, cv=folds,
+                        scoring=['accuracy', 'f1_macro', 'recall_macro', 'precision_macro'])
+    accuracy = np.mean(cv['test_accuracy'])
     f1 = np.mean(cv['test_f1_macro'])
     recall = np.mean(cv['test_recall_macro'])
     precision = np.mean(cv['test_precision_macro'])
@@ -69,11 +73,35 @@ def grid_search_bow(data, target, ids, questionmark_features, folds=10, do_custo
             count += 1
             bow = BoW(ngram_range=i, max_features=j, stop_words=None)
             x = bow.fit(data)
+            if i == (1, 2) and j == 91:
+                svd = TruncatedSVD(n_components=2, random_state=42)
+                reduced = svd.fit_transform(x)
+                # Group data by target 'observing', 'for' and 'against' in a dict
+                targets = {}
+                length = reduced.shape[0]
+                for ind in range(0, length):
+                    targeted = target[ind]
+                    PC = reduced[ind]
+                    if targeted not in targets:
+                        targets[targeted] = ([PC[0]], [PC[1]])
+                    else:
+                        targets[targeted] = (targets[targeted][0] + [PC[0]], targets[targeted][1] + [PC[1]])
+                targets_list = list(targets.items())
+                plt.scatter(targets_list[0][1][0], targets_list[0][1][1], label='observing', alpha=0.7)
+                plt.scatter(targets_list[1][1][0], targets_list[1][1][1], label='for', alpha=0.7)
+                plt.scatter(targets_list[2][1][0], targets_list[2][1][1], label='against', alpha=0.7)
+                plt.legend()
+                plt.show()
+
+            # print(reduced)
+            # combined2 = np.column_stack((reduced, questionmark_features.toarray()))
             combined = add_question_mark_feature(x, questionmark_features)
+            # print(combined.toarray()[0])
+            regularization = 'l2'
             if do_custom_folds:
-                res.append([logistic_regression(combined, target, custom_folds), i, j])
+                res.append([logistic_regression(combined, target, custom_folds, regularization), i, j])
             else:
-                res.append([logistic_regression(combined, target, folds), i, j])
+                res.append([logistic_regression(combined, target, folds, regularization), i, j])
 
     print(sorted(res, key=lambda x: x[0], reverse=True))
 
