@@ -1,5 +1,8 @@
 import csv
-from corenlp import *
+from bow_grid_search import split_data
+from rootdist import get_rootdist_matrix, crossval_rootdist
+from scipy import sparse
+import numpy as np
 
 DATA_PATH = './data/url-versions-2015-06-14-clean.csv'
 
@@ -29,17 +32,26 @@ def extract_questionmark_features(data, header_index):
 
         has_questionmark = '?' in row[header_index]
         features.append(has_questionmark)
-    return features
+    return sparse.csr_matrix(np.array([features]).T)
+
+if __name__ == "__main__":
+    data = extract_article_headers(DATA_PATH, ['articleHeadline', 'articleHeadlineStance', 'claimId'])
+
+    print(f'Headers: {data[0]}')
+    print(f'First row: {data[1]}')
+
+    headers = ['articleHeadline', 'articleHeadlineStance']
+    rootdist = get_rootdist_matrix()
+    questionmark_features = extract_questionmark_features(data, headers.index('articleHeadline'))
+
+    data = split_data(data)
 
 
-headers = ['articleHeadline', 'articleHeadlineStance']
-data = extract_article_headers(DATA_PATH, headers)
+    x = data[0]
+    y = data[1]
+    ids = data[2]
 
-questionmark_features = extract_questionmark_features(data, headers.index('articleHeadline'))
-count_true = len(list(filter(lambda x: x, questionmark_features)))
-count_false = len(questionmark_features) - count_true
-print(f'- Questionmarks total: {len(questionmark_features)}, with: {count_true}, without: {count_false}')
-
-# Remove headers from data matrix before processing rootdist
-data = data[1:]
-rootdist = get_rootdist_matrix(data, 0)  # Give column in which sentences are stored
+    print("Rootdist without questionmark")
+    crossval_rootdist(rootdist, y, ids, [])
+    print("Rootdist with questionmark")
+    crossval_rootdist(rootdist, y, ids, questionmark_features)
