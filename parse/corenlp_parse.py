@@ -65,8 +65,8 @@ def extract_article_headers(data_path, headers):
 def get_dataset(path=DATA_PATH):
     return pd.read_csv(path)
 
-def stanford_data_parse():
-    df = get_dataset()
+def stanford_data_parse(path=DATA_PATH):
+    df = get_dataset(path)
     print(df)
     nlp = NLPRootDist(model_location='../corenlp_models')
     data = {}
