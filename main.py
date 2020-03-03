@@ -6,6 +6,7 @@ from bow import BoW
 from bow_grid_search import split_data, logistic_regression, add_question_mark_feature, svm_rbf, plot_2D_data
 from cross_val import cv_fold_generator
 from rootdist import get_rootdist_matrix, crossval_rootdist
+from alignment_score import get_ppdb_alignment_feature
 from scipy import sparse
 import numpy as np
 
@@ -40,8 +41,9 @@ def combined_crossval(claim_ids, target, rootdist_matrix, tf_matrix, questionmar
     custom_folds = cv_fold_generator(claim_ids, folds)
     data_sparse = sparse.csr_matrix(rootdist_matrix)
     combined_rootdist_questionmark = add_question_mark_feature(data_sparse, questionmark)
-    combined_all = sparse.hstack((combined_rootdist_questionmark, tf_matrix))
-    plot_2D_data(combined_all, target)
+    combined_alignment = sparse.hstack((combined_rootdist_questionmark, get_ppdb_alignment_feature()))
+    combined_all = sparse.hstack((combined_alignment, tf_matrix))
+    # plot_2D_data(combined_all, target)
 
     print('accuracy', 'f1_macro', 'recall_macro', 'precision_macro')
     if do_custom_folds:
