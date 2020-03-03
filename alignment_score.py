@@ -79,7 +79,7 @@ def get_ppdb_alignment_feature(pickled_path=PICKLED_PATH):
 	data = get_alignment_data()
 	alignment_scores = [v[1] for k, v in data.items()]
 
-	return sparse.csr_matrix(np.array([alignment_scores]).T)
+	return np.array([alignment_scores]).T
 
 if __name__ == "__main__":
 	add_ppdb_alignment_feature()	

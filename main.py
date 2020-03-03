@@ -39,11 +39,17 @@ def extract_questionmark_features(data, index):
 
 def combined_crossval(claim_ids, target, rootdist_matrix, tf_matrix, questionmark, folds=5, do_custom_folds=True, regularization='l2'):
     custom_folds = cv_fold_generator(claim_ids, folds)
-    data_sparse = sparse.csr_matrix(rootdist_matrix)
-    combined_rootdist_questionmark = add_question_mark_feature(data_sparse, questionmark)
-    combined_alignment = sparse.hstack((combined_rootdist_questionmark, get_ppdb_alignment_feature()))
-    combined_all = sparse.hstack((combined_alignment, tf_matrix))
-    # plot_2D_data(combined_all, target)
+    rootdist_feature = sparse.csr_matrix(rootdist_matrix)
+    questionmark_feature = questionmark
+    ppdb_alignment_feature = sparse.csr_matrix(get_ppdb_alignment_feature())
+
+    combined_all = sparse.hstack((
+    	rootdist_feature, 
+    	questionmark_feature, 
+    	ppdb_alignment_feature, 
+    	tf_matrix
+    ))
+    plot_2D_data(combined_all, target)
 
     print('accuracy', 'f1_macro', 'recall_macro', 'precision_macro')
     if do_custom_folds:
