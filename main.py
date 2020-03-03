@@ -37,6 +37,28 @@ def extract_questionmark_features(data, index):
     return sparse.csr_matrix(np.array([features]).T)
 
 
+def questionmark_only(claim_ids, target, questionmark, folds=5, do_custom_folds=True, regularization='l2'):
+    custom_folds = cv_fold_generator(claim_ids, folds)
+    print('accuracy', 'f1_macro', 'recall_macro', 'precision_macro')
+    if do_custom_folds:
+        print(logistic_regression(questionmark, target, custom_folds, regularization, 1000000))
+    else:
+        print(logistic_regression(questionmark, target, folds, regularization, 1000000))
+
+
+def bow_rootdist(claim_ids, target, rootdist_matrix, tf_matrix, folds=5, do_custom_folds=True, regularization='l2'):
+    custom_folds = cv_fold_generator(claim_ids, folds)
+    data_sparse = sparse.csr_matrix(rootdist_matrix)
+    combined_all = sparse.hstack((data_sparse, tf_matrix))
+    plot_2D_data(combined_all, target)
+
+    print('accuracy', 'f1_macro', 'recall_macro', 'precision_macro')
+    if do_custom_folds:
+        print(logistic_regression(combined_all, target, custom_folds, regularization, 1000000))
+    else:
+        print(logistic_regression(combined_all, target, folds, regularization, 1000000))
+
+
 def combined_crossval(claim_ids, target, rootdist_matrix, tf_matrix, questionmark, folds=5, do_custom_folds=True, regularization='l2'):
     custom_folds = cv_fold_generator(claim_ids, folds)
     rootdist_feature = sparse.csr_matrix(rootdist_matrix)
@@ -76,9 +98,13 @@ if __name__ == "__main__":
     bow = BoW(ngram_range=(1, 2), max_features=90, stop_words=None)
     tf = bow.fit(x)
 
+    print("Questionmark only")
+    questionmark_only(ids, y, questionmark_features, 10, True)
     print("Rootdist without questionmark")
     crossval_rootdist(rootdist, y, ids, None)
     print("Rootdist with questionmark")
     crossval_rootdist(rootdist, y, ids, questionmark_features)
+    print("BoW with Rootdist")
+    bow_rootdist(ids, y, rootdist, tf, 10, True)
     print("All features")
-    combined_crossval(ids, y, rootdist, tf, questionmark_features, 5, True)
+    combined_crossval(ids, y, rootdist, tf, questionmark_features, 10, False)
