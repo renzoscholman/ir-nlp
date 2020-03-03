@@ -31,14 +31,10 @@ def extract_article_headers(data_path, headers):
         return rows
 
 
-def extract_questionmark_features(data, header_index):
+def extract_questionmark_features(data, index):
     features = []
-    for i, row in enumerate(data):
-        # Skip the headers
-        if i == 0:
-            continue
-
-        has_questionmark = '?' in row[header_index]
+    for i, row in enumerate(data[index]):
+        has_questionmark = '?' in row
         features.append(has_questionmark)
     return sparse.csr_matrix(np.array([features]).T)
 
@@ -88,7 +84,7 @@ def plot_2D_data(data, target):
     plt.show()
 
 
-def grid_search_bow(data, target, ids, questionmark_features, folds=10, do_custom_folds=True):
+def grid_search_bow(data_h, target, ids, questionmark_features, folds=10, do_custom_folds=True):
     ngram_range = [(1, 1), (1, 2), (2, 2), (1, 3), (2, 3), (3, 3)]
     max_features = range(80, 95)
     custom_folds = cv_fold_generator(ids, folds)
@@ -99,8 +95,8 @@ def grid_search_bow(data, target, ids, questionmark_features, folds=10, do_custo
             print(count / (len(max_features) * len(ngram_range)))
             count += 1
             bow = BoW(ngram_range=i, max_features=j, stop_words=None)
-            x = bow.fit(data)
-            if i == (1, 2) and j == 91:
+            x = bow.fit(data_h)
+            if i == (1, 2) and j == 90:
                 plot_2D_data(x, target)
 
             # print(reduced)
@@ -137,5 +133,5 @@ if __name__ == "__main__":
     ids = data_split[2]
 
     questionmark_features = extract_questionmark_features(data_split, headers.index('articleHeadline'))
-
+    print(list(questionmark_features.toarray()))
     grid_search_bow(x, y, ids, questionmark_features)
