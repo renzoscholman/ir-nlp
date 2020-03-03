@@ -37,7 +37,7 @@ def cv_fold_generator(data, n_folds=10):
         fold = []
         # First n_folds - 1 folds, fill fold with at least fold_size data rows
         if i < n_folds - 1:
-            while len(fold) < fold_size:
+            while (len(fold) + len(claim_list[counter][1])) < fold_size:
                 fold = fold + (claim_list[counter][1])
                 counter = counter + 1
         # Last fold, fills it with remaining data rows

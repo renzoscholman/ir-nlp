@@ -39,6 +39,11 @@ def extract_questionmark_features(data, index):
     return sparse.csr_matrix(np.array([features]).T)
 
 
+def logistic_regression_var(data, target, folds, regularization='l2', max_iter=10000):
+    clf = LogisticRegression(multi_class="ovr", penalty=regularization, max_iter=max_iter)
+    return kfold_cross_var(clf, data, target, folds)
+
+
 def logistic_regression(data, target, folds, regularization='l2', max_iter=10000):
     clf = LogisticRegression(multi_class="ovr", penalty=regularization, max_iter=max_iter)
     return kfold_cross(clf, data, target, folds)
@@ -47,6 +52,20 @@ def logistic_regression(data, target, folds, regularization='l2', max_iter=10000
 def svm_rbf(data, target, folds, regularization='l2', max_iter=-1):
     clf = SVC(C=0.5, kernel='rbf', gamma='scale', max_iter=max_iter)
     return kfold_cross(clf, data, target, folds)
+
+
+def kfold_cross_var(clf, data, target, folds=10):
+    cv = cross_validate(clf, data, target, cv=folds,
+                        scoring=['accuracy', 'f1_macro', 'recall_macro', 'precision_macro'])
+    accuracy = np.mean(cv['test_accuracy'])
+    f1 = np.mean(cv['test_f1_macro'])
+    recall = np.mean(cv['test_recall_macro'])
+    precision = np.mean(cv['test_precision_macro'])
+    accuracy_var = np.var(cv['test_accuracy'])
+    f1_var = np.var(cv['test_f1_macro'])
+    recall_var = np.var(cv['test_recall_macro'])
+    precision_var = np.var(cv['test_precision_macro'])
+    return [accuracy, f1, recall, precision, accuracy_var, f1_var, recall_var, precision_var]
 
 
 def kfold_cross(clf, data, target, folds=10):
