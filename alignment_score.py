@@ -13,6 +13,7 @@ MIN_SCORE = -10
 MAX_SCORE = 10
 PICKLED_PATH = './data/pickled'
 
+# Get the ppdb pickle file from: https://github.com/willferreira/mscproject (dropbox/drive)
 def get_ppdb_data(path=f'{PICKLED_PATH}/ppdb.pickle'):
     with open(path, 'rb') as f:
         return pickle.load(f, encoding='latin1')
