@@ -6,8 +6,8 @@ from bow import BoW
 from bow_grid_search import split_data, logistic_regression, add_question_mark_feature, svm_rbf, plot_2D_data, \
     logistic_regression_var
 from cross_val import cv_fold_generator
-from rootdist import get_rootdist_matrix, crossval_rootdist
 from alignment_score import get_ppdb_alignment_feature
+from rootdist import get_rootdist_matrix, crossval_grid_search
 from scipy import sparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -136,13 +136,13 @@ if __name__ == "__main__":
     bow = BoW(ngram_range=(1, 2), max_features=90, stop_words=None)
     tf = bow.fit(x)
 
+    print("Rootdist grid_search")
+    ppdb_alignment_feature = sparse.csr_matrix(get_ppdb_alignment_feature())
+    crossval_grid_search(y, ids, min_rootdist=3, max_rootdist=10, bow=tf, ppdb=ppdb_alignment_feature, questionmark_features=questionmark_features)
+
     variance_plot_cv(ids, y, rootdist, tf, questionmark_features, range(2, 10))
     print("Questionmark only")
     questionmark_only(ids, y, questionmark_features, 10, True)
-    print("Rootdist without questionmark")
-    crossval_rootdist(rootdist, y, ids, None)
-    print("Rootdist with questionmark")
-    crossval_rootdist(rootdist, y, ids, questionmark_features)
     print("BoW with Rootdist")
     bow_rootdist(ids, y, rootdist, tf, 10, True)
     print("All features")
