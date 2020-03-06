@@ -61,7 +61,6 @@ def grid_search_bow(data, target, questionmark_features):
 
     for i in ngram_range:
         for j in max_features:
-            print(count / (len(max_features) * len(ngram_range)))
             count += 1
             bow = BoW(ngram_range=i, max_features=j)
 
@@ -76,28 +75,75 @@ def grid_search_bow(data, target, questionmark_features):
     print(sorted(res, key=lambda x: x[0], reverse=True))
 
 
+def hyperparam_bow(data, target, questionmark_features):
+    max_features = range(80, 120)
+    res = []
+    count = 0
+
+    for i in max_features:
+        count += 1
+        bow = BoW(ngram_range=(1, 2), max_features=i)
+
+        d = bow.fit(data)
+        # combined = add_question_mark_feature(d, questionmark_features)
+
+        r = logistic_regression(d, target)
+        res.append([r, i])
+
+    plot_hyperparam_bow(res, max_features)
+
+    print(sorted(res, key=lambda x: x[0], reverse=True))
+
+
+def plot_hyperparam_bow(results, max_features):
+    x = []
+    accuracy = []
+    f1 = []
+    recall = []
+    precision = []
+    index = 0
+    for i in max_features:
+        x.append(i)
+        accuracy.append(results[index][0][0])
+        f1.append(results[index][0][1])
+        recall.append(results[index][0][2])
+        precision.append(results[index][0][3])
+        index += 1
+
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.plot(x, accuracy, label='Accuracy')
+    ax.plot(x, f1, label='F1-Score')
+    ax.plot(x, recall, label='Recall')
+    ax.plot(x, precision, label='Precision ')
+    ax.legend()
+    ax.set_xlabel("Max features")
+    fig.show()
+
+
 def plot_grid_search_bow(results, ngram_range, max_features):
     x = []
     y = []
-    z = []
+    accuracy = []
     index = 0
     for i in range(0, len(ngram_range)):
         for j in max_features:
             x.append(i)
             y.append(j)
-            z.append(results[index][0][0])
+            accuracy.append(results[index][0][0])
             index += 1
 
     fig = plt.figure()
     labels = ['(1, 1)', '(1, 2)', '(1, 3)', '(2, 2)', '(2, 3)', '(3, 3)']
     ax = fig.add_subplot(111, projection='3d')
-    ax.set_xticks([0,1,2,3,4,5])
+    ax.set_xticks([0, 1, 2, 3, 4, 5])
     ax.set_xticklabels(labels)
-    ax.scatter(x, y, z)
+    ax.scatter(x, y, accuracy)
     ax.set_xlabel("N-gram range")
     ax.set_ylabel("Max features")
     ax.set_zlabel("Accuracy")
     fig.show()
+
 
 def split_data(data):
     y = list(map(lambda row: row[1], data))
@@ -119,3 +165,4 @@ x = data[0]
 y = data[1]
 
 grid_search_bow(x, y, questionmark_features)
+hyperparam_bow(x, y, questionmark_features)
