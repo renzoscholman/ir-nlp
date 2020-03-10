@@ -6,9 +6,11 @@ from classification import  logistic_regression, logistic_regression_var, svm_rb
 from alignment_score import get_ppdb_alignment_feature
 from rootdist import get_rootdist_matrix, crossval_grid_search
 from scipy import sparse
+from sklearn.metrics import plot_confusion_matrix
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
+from sklearn.linear_model import LogisticRegression
 
 DATA_PATH = './data/url-versions-2015-06-14-clean.csv'
 
@@ -23,6 +25,31 @@ def extract_article_headers(data_path, headers):
 
         return rows
 
+def print_data_distribution(labels):
+    all_observing = len(list(filter(lambda x: x == 'observing', labels)))/len(labels) * 100
+    all_for = len(list(filter(lambda x: x == 'for', labels)))/len(labels) * 100
+    all_against = len(list(filter(lambda x: x == 'against', labels)))/len(labels) * 100
+    print('Distribution')
+    print(f'Observing: {all_observing}% For: {all_for}% Against: {all_against}%')
+
+def show_confusion_matrix(y_test, class_names, rootdist, questionmark_features):
+    # Copy pasted classification code to avoid a huge code restructure
+    rootdist_feature = sparse.csr_matrix(rootdist)
+    ppdb_alignment_feature = sparse.csr_matrix(get_ppdb_alignment_feature())
+    X_test = sparse.hstack((rootdist_feature, questionmark_features, ppdb_alignment_feature, tf))
+    clf = LogisticRegression(multi_class="ovr", penalty='l2', max_iter=10000).fit(X_test, y_test)
+
+    # Plot non-normalized confusion matrix
+    titles_options = [("Confusion matrix, without normalization", None),
+                      ("Normalized confusion matrix", 'true')]
+    for title, normalize in titles_options:
+        disp = plot_confusion_matrix(clf, X_test, y_test,
+                                     display_labels=class_names,
+                                     cmap=plt.cm.Blues,
+                                     normalize=normalize)
+        disp.ax_.set_title(title)
+
+    plt.show()
 
 def extract_column(data, header_index):
     # Extract a column without the header
@@ -194,15 +221,13 @@ def combined_crossval(claim_ids, target, rootdist_matrix, tf_matrix, questionmar
 
 if __name__ == "__main__":
     data = extract_article_headers(DATA_PATH, ['articleHeadline', 'articleHeadlineStance', 'claimId'])
-
-    print(f'Headers: {data[0]}')
-    print(f'First row: {data[1]}')
-
     headers = ['articleHeadline', 'articleHeadlineStance']
 
     data_split = split_data(data)
     x = data_split[0]
     y = data_split[1]
+    print_data_distribution(y)
+
     ids = data_split[2]
 
     rootdist = get_rootdist_matrix(7)
@@ -220,3 +245,6 @@ if __name__ == "__main__":
     print("BoW with Rootdist")
     bow_rootdist(ids, y, rootdist, tf, 10, True)
     combined_crossval(ids, y, rootdist, tf, questionmark_features, 7)
+    print("All features")
+    combined_crossval(ids, y, rootdist, tf, questionmark_features, 10, False)
+    show_confusion_matrix(y, ['for', 'against', 'observing'], rootdist, questionmark_features)
