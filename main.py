@@ -3,7 +3,7 @@ import csv
 from sklearn.decomposition import TruncatedSVD
 
 from bow import BoW
-from bow_grid_search import split_data, logistic_regression, add_question_mark_feature, svm_rbf, plot_2D_data, \
+from bow_analysis import split_data, logistic_regression, add_question_mark_feature, svm_rbf, plot_2D_data, \
     logistic_regression_var
 from cross_val import cv_fold_generator
 from alignment_score import get_ppdb_alignment_feature

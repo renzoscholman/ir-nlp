@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-from bow_grid_search import add_question_mark_feature, logistic_regression
+from bow_analysis import add_question_mark_feature, logistic_regression
 from cross_val import cv_fold_generator
 
 DATA_PATH = './data/url-versions-2015-06-14-clean.csv'

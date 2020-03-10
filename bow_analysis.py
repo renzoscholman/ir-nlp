@@ -1,6 +1,5 @@
 import csv
 
-import matplotlib.pyplot as plt
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -13,6 +12,8 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 from sklearn.preprocessing import normalize
 from sklearn.svm import SVC
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 from bow import BoW
 from cross_val import cv_fold_generator
@@ -103,7 +104,28 @@ def plot_2D_data(data, target):
     plt.show()
 
 
-def grid_search_bow(data_h, target, ids, questionmark_features, folds=10, do_custom_folds=True):
+def grid_search_bow(data, target):
+    ngram_range = [(1, 1), (1, 2), (1, 3), (2, 2), (2, 3), (3, 3)]
+    max_features = [5,10,100,200,300,400,500,600,700,800,900,1000]
+    res = []
+    count = 0
+
+    for i in ngram_range:
+        for j in max_features:
+            count += 1
+            bow = BoW(ngram_range=i, max_features=j)
+
+            d = bow.fit(data)
+
+            r = logistic_regression(d, target, 10)
+            res.append([r, i, j])
+
+    plot_grid_search_bow(res, ngram_range, max_features)
+
+    print(sorted(res, key=lambda x: x[0], reverse=True))
+
+
+def grid_search_bow_custom_fold(data_h, target, ids, questionmark_features, folds=10, do_custom_folds=True):
     ngram_range = [(1, 1), (1, 2), (2, 2), (1, 3), (2, 3), (3, 3)]
     max_features = range(80, 95)
     custom_folds = cv_fold_generator(ids, folds)
@@ -131,6 +153,75 @@ def grid_search_bow(data_h, target, ids, questionmark_features, folds=10, do_cus
     print(sorted(res, key=lambda x: x[0], reverse=True))
 
 
+def hyperparam_bow(data, target):
+    max_features = range(80, 120)
+    res = []
+    count = 0
+
+    for i in max_features:
+        count += 1
+        bow = BoW(ngram_range=(1, 2), max_features=i)
+
+        d = bow.fit(data)
+
+        r = logistic_regression(d, target, 10)
+        res.append([r, i])
+
+    plot_hyperparam_bow(res, max_features)
+
+    print(sorted(res, key=lambda x: x[0], reverse=True))
+
+
+def plot_hyperparam_bow(results, max_features):
+    x = []
+    accuracy = []
+    f1 = []
+    recall = []
+    precision = []
+    index = 0
+    for i in max_features:
+        x.append(i)
+        accuracy.append(results[index][0][0])
+        f1.append(results[index][0][1])
+        recall.append(results[index][0][2])
+        precision.append(results[index][0][3])
+        index += 1
+
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.plot(x, accuracy, label='Accuracy')
+    ax.plot(x, f1, label='F1-Score')
+    ax.plot(x, recall, label='Recall')
+    ax.plot(x, precision, label='Precision ')
+    ax.legend()
+    ax.set_xlabel("Max features")
+    fig.show()
+
+
+def plot_grid_search_bow(results, ngram_range, max_features):
+    x = []
+    y = []
+    accuracy = []
+    index = 0
+    for i in range(0, len(ngram_range)):
+        for j in max_features:
+            x.append(i)
+            y.append(j)
+            accuracy.append(results[index][0][0])
+            index += 1
+
+    fig = plt.figure()
+    labels = ['(1, 1)', '(1, 2)', '(1, 3)', '(2, 2)', '(2, 3)', '(3, 3)']
+    ax = fig.add_subplot(111, projection='3d')
+    ax.set_xticks([0, 1, 2, 3, 4, 5])
+    ax.set_xticklabels(labels)
+    ax.scatter(x, y, accuracy)
+    ax.set_xlabel("N-gram range")
+    ax.set_ylabel("Max features")
+    ax.set_zlabel("Accuracy")
+    fig.show()
+
+
 def split_data(data):
     y = list(map(lambda row: row[1], data))
     x = list(map(lambda row: row[0], data))
@@ -153,4 +244,7 @@ if __name__ == "__main__":
 
     questionmark_features = extract_questionmark_features(data_split, headers.index('articleHeadline'))
     print(list(questionmark_features.toarray()))
-    grid_search_bow(x, y, ids, questionmark_features)
+
+    grid_search_bow(x, y)
+    hyperparam_bow(x, y)
+    grid_search_bow_custom_fold(x, y, ids, questionmark_features)
