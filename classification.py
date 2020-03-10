@@ -83,7 +83,7 @@ def logistic_regression_var(data, target, folds, regularization='l2', max_iter=1
     return kfold_cross_var(clf, data, target, folds)
 
 
-def logistic_regression(data, target, folds, multiclass='ovr', regularization='l2', max_iter=10000):
+def logistic_regression(data, target, folds, regularization='l2', max_iter=10000, multiclass='ovr'):
     solver = 'saga' if regularization == 'l1' else 'lbfgs'
     clf = LogisticRegression(multi_class=multiclass, penalty=regularization, solver=solver, max_iter=max_iter)
     return kfold_cross(clf, data, target, folds)

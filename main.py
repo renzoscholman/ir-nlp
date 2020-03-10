@@ -210,10 +210,10 @@ def combined_crossval(claim_ids, target, rootdist_matrix, tf_matrix, questionmar
         folds = custom_folds
 
     print("Classifier: ", '[accuracy,', 'f1_macro,', 'recall_macro,', 'precision_macro]')
-    print("Logistic regression ovr L1: ", logistic_regression(combined_all, target, folds, 'ovr', 'l1', 1000000))
-    print("Logistic regression ovr L2: ", logistic_regression(combined_all, target, folds, 'ovr', 'l2', 1000000))
-    print("Logistic regression multiclass L1: ", logistic_regression(combined_all, target, folds, 'multinomial', 'l1', 1000000))
-    print("Logistic regression multiclass L2: ", logistic_regression(combined_all, target, folds, 'multinomial', 'l2', 1000000))
+    print("Logistic regression ovr L1: ", logistic_regression(combined_all, target, folds, 'l1', 1000000, 'ovr'))
+    print("Logistic regression ovr L2: ", logistic_regression(combined_all, target, folds, 'l2', 1000000, 'ovr'))
+    print("Logistic regression multiclass L1: ", logistic_regression(combined_all, target, folds, 'l1', 1000000, 'multinomial'))
+    print("Logistic regression multiclass L2: ", logistic_regression(combined_all, target, folds, 'l2', 1000000, 'multinomial'))
     print("SVM Cross-validation")
     svm_crossval_grid(combined_all, target, folds)
     print("Naive Bayes: ", naive_bayes(combined_all.toarray(), target, folds))
