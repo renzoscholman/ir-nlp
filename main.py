@@ -244,7 +244,6 @@ if __name__ == "__main__":
     questionmark_only(ids, y, questionmark_features, 10, True)
     print("BoW with Rootdist")
     bow_rootdist(ids, y, rootdist, tf, 10, True)
-    combined_crossval(ids, y, rootdist, tf, questionmark_features, 7)
     print("All features")
-    combined_crossval(ids, y, rootdist, tf, questionmark_features, 10, False)
+    combined_crossval(ids, y, rootdist, tf, questionmark_features, 7)
     show_confusion_matrix(y, ['for', 'against', 'observing'], rootdist, questionmark_features)
