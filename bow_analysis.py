@@ -1,22 +1,12 @@
 import csv
+import numpy as np
+import matplotlib.pyplot as plt
 
 from sklearn.decomposition import TruncatedSVD
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV, cross_val_score
-from sklearn.model_selection import cross_validate
-from sklearn.pipeline import FeatureUnion
-from sklearn import svm
 from scipy import sparse
-from sklearn.ensemble import RandomForestClassifier
-import numpy as np
-from sklearn.preprocessing import normalize
-from sklearn.svm import SVC
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
+from classification import logistic_regression, split_data, cv_fold_generator
 from bow import BoW
-from cross_val import cv_fold_generator
 
 DATA_PATH = './data/url-versions-2015-06-14-clean.csv'
 
@@ -38,45 +28,6 @@ def extract_questionmark_features(data, index):
         has_questionmark = '?' in row
         features.append(has_questionmark)
     return sparse.csr_matrix(np.array([features]).T)
-
-
-def logistic_regression_var(data, target, folds, regularization='l2', max_iter=10000):
-    clf = LogisticRegression(multi_class="ovr", penalty=regularization, max_iter=max_iter)
-    return kfold_cross_var(clf, data, target, folds)
-
-
-def logistic_regression(data, target, folds, regularization='l2', max_iter=10000):
-    clf = LogisticRegression(multi_class="ovr", penalty=regularization, max_iter=max_iter)
-    return kfold_cross(clf, data, target, folds)
-
-
-def svm_rbf(data, target, folds, regularization='l2', max_iter=-1):
-    clf = SVC(C=0.5, kernel='rbf', gamma='scale', max_iter=max_iter)
-    return kfold_cross(clf, data, target, folds)
-
-
-def kfold_cross_var(clf, data, target, folds=10):
-    cv = cross_validate(clf, data, target, cv=folds,
-                        scoring=['accuracy', 'f1_macro', 'recall_macro', 'precision_macro'])
-    accuracy = np.mean(cv['test_accuracy'])
-    f1 = np.mean(cv['test_f1_macro'])
-    recall = np.mean(cv['test_recall_macro'])
-    precision = np.mean(cv['test_precision_macro'])
-    accuracy_var = np.var(cv['test_accuracy'])
-    f1_var = np.var(cv['test_f1_macro'])
-    recall_var = np.var(cv['test_recall_macro'])
-    precision_var = np.var(cv['test_precision_macro'])
-    return [accuracy, f1, recall, precision, accuracy_var, f1_var, recall_var, precision_var]
-
-
-def kfold_cross(clf, data, target, folds=10):
-    cv = cross_validate(clf, data, target, cv=folds,
-                        scoring=['accuracy', 'f1_macro', 'recall_macro', 'precision_macro'])
-    accuracy = np.mean(cv['test_accuracy'])
-    f1 = np.mean(cv['test_f1_macro'])
-    recall = np.mean(cv['test_recall_macro'])
-    precision = np.mean(cv['test_precision_macro'])
-    return [accuracy, f1, recall, precision]
 
 
 def add_question_mark_feature(data, questionmark_features):
@@ -220,13 +171,6 @@ def plot_grid_search_bow(results, ngram_range, max_features):
     ax.set_ylabel("Max features")
     ax.set_zlabel("Accuracy")
     fig.show()
-
-
-def split_data(data):
-    y = list(map(lambda row: row[1], data))
-    x = list(map(lambda row: row[0], data))
-    ids = list(map(lambda row: row[2], data))
-    return x[1:], y[1:], ids[1:]
 
 
 if __name__ == "__main__":

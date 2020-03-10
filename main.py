@@ -1,16 +1,14 @@
 import csv
 
-from sklearn.decomposition import TruncatedSVD
-
 from bow import BoW
-from bow_analysis import split_data, logistic_regression, add_question_mark_feature, svm_rbf, plot_2D_data, \
-    logistic_regression_var
-from cross_val import cv_fold_generator
+from bow_analysis import plot_2D_data
+from classification import  logistic_regression, logistic_regression_var, svm_rbf, naive_bayes, split_data, cv_fold_generator
 from alignment_score import get_ppdb_alignment_feature
 from rootdist import get_rootdist_matrix, crossval_grid_search
 from scipy import sparse
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 
 DATA_PATH = './data/url-versions-2015-06-14-clean.csv'
 
@@ -95,9 +93,79 @@ def bow_rootdist(claim_ids, target, rootdist_matrix, tf_matrix, folds=5, do_cust
     else:
         print(logistic_regression(combined_all, target, folds, regularization, 1000000))
 
+class MidpointNormalize(Normalize):
 
-def combined_crossval(claim_ids, target, rootdist_matrix, tf_matrix, questionmark, folds=5, do_custom_folds=True,
-                      regularization='l2'):
+    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):
+        self.midpoint = midpoint
+        Normalize.__init__(self, vmin, vmax, clip)
+
+    def __call__(self, value, clip=None):
+        x, y = [self.vmin, self.midpoint, self.vmax], [0, 0.5, 1]
+        return np.ma.masked_array(np.interp(value, x, y))
+
+def svm_crossval_grid(data, target, folds):
+    print("Crossvalidating SVM with regularization")
+    res = []
+    gamma_range = np.logspace(-3.5, -2.5, 20)
+    c_range = np.linspace(60, 250, 20)
+    gamma_range_ticks = [round(i,6) for i in gamma_range]
+    print(gamma_range)
+    print(c_range)
+    total = len(c_range) * len(gamma_range)
+    for j, C in enumerate(c_range):
+        for i, gamma in enumerate(gamma_range):
+            print("At ", round(((j * len(gamma_range) + i) * 100.0) / total, 2), "%")
+            res.append([svm_rbf(data, target, folds, C=C, gamma=gamma, max_iter=1000000), C, gamma])
+
+    acc = np.asarray([[a[0][0], a[1], a[2]] for a in res])
+    print("Max acc at: ", acc[np.argmax(acc[:, 0]), 1], " ", acc[np.argmax(acc[:, 0]), 2], " ", np.max(acc[:, 0]))
+
+    acc = np.asarray([a[0] for a in acc])
+    scores = acc.reshape(len(c_range), len(gamma_range))
+
+    plt.figure(figsize=(8, 6))
+    plt.subplots_adjust(left=.2, right=0.95, bottom=0.15, top=0.95)
+    plt.imshow(scores, interpolation='nearest', cmap=plt.cm.hot,
+               norm=MidpointNormalize(vmin=0.65, midpoint=0.75))
+    plt.xlabel('gamma')
+    plt.ylabel('C')
+    plt.colorbar()
+    plt.xticks(np.arange(len(gamma_range)), gamma_range_ticks, rotation=45)
+    plt.yticks(np.arange(len(c_range)), c_range, rotation=45)
+    plt.title('SVM with L2 regularization accuracy')
+    plt.show()
+
+def svm_crossval(data, target, folds):
+    for reg in ['l1', 'l2']:
+        print("Crossvalidating SVM with "+reg+" regularization")
+        res = []
+        C_range = np.logspace(-3, 0, 100)
+        total = len(C_range)
+        for i, C in enumerate(C_range):
+            print("At ", round((i * 100.0) / total, 2), "%")
+            res.append([svm_rbf(data, target, folds, reg, C=C, max_iter=1000000), C])
+
+        acc = np.asarray([[a[0][0], a[1]] for a in res])
+        f1 = np.asarray([[a[0][1], a[1]] for a in res])
+        recall = np.asarray([[a[0][2], a[1]] for a in res])
+        precision = np.asarray([[a[0][3], a[1]] for a in res])
+        print("Max acc without question at default_dist: ", acc[np.argmax(acc[:, 0]), 1], " ", np.max(acc[:, 0]))
+        print("Max f1 without question at default_dist: ", f1[np.argmax(f1[:, 0]), 1], " ", np.max(f1[:, 0]))
+        print("Max recall without question at default_dist: ", recall[np.argmax(recall[:, 0]), 1], " ",
+              np.max(recall[:, 0]))
+        print("Max precision without question at default_dist: ", precision[np.argmax(precision[:, 0]), 1], " ",
+              np.max(precision[:, 0]))
+        plt.plot(acc[:, 1], acc[:, 0], label='Accuracy')
+        plt.plot(f1[:, 1], f1[:, 0], label='F1-Score')
+        plt.plot(recall[:, 1], recall[:, 0], label='Recall')
+        plt.plot(precision[:, 1], precision[:, 0], label='Precision')
+        plt.legend()
+        plt.xscale('log')
+        plt.xlabel("C regularization parameter")
+        plt.title("SVM with "+reg+" regularization")
+        plt.show()
+
+def combined_crossval(claim_ids, target, rootdist_matrix, tf_matrix, questionmark, folds=7, do_custom_folds=True):
     custom_folds = cv_fold_generator(claim_ids, folds)
     rootdist_feature = sparse.csr_matrix(rootdist_matrix)
     questionmark_feature = questionmark
@@ -111,11 +179,17 @@ def combined_crossval(claim_ids, target, rootdist_matrix, tf_matrix, questionmar
     ))
     plot_2D_data(combined_all, target)
 
-    print('accuracy', 'f1_macro', 'recall_macro', 'precision_macro')
     if do_custom_folds:
-        print(logistic_regression(combined_all, target, custom_folds, regularization, 1000000))
-    else:
-        print(logistic_regression(combined_all, target, folds, regularization, 1000000))
+        folds = custom_folds
+
+    print("Classifier: ", '[accuracy,', 'f1_macro,', 'recall_macro,', 'precision_macro]')
+    print("Logistic regression ovr L1: ", logistic_regression(combined_all, target, folds, 'ovr', 'l1', 1000000))
+    print("Logistic regression ovr L2: ", logistic_regression(combined_all, target, folds, 'ovr', 'l2', 1000000))
+    print("Logistic regression multiclass L1: ", logistic_regression(combined_all, target, folds, 'multinomial', 'l1', 1000000))
+    print("Logistic regression multiclass L2: ", logistic_regression(combined_all, target, folds, 'multinomial', 'l2', 1000000))
+    print("SVM Cross-validation")
+    svm_crossval_grid(combined_all, target, folds)
+    print("Naive Bayes: ", naive_bayes(combined_all.toarray(), target, folds))
 
 
 if __name__ == "__main__":
@@ -131,19 +205,18 @@ if __name__ == "__main__":
     y = data_split[1]
     ids = data_split[2]
 
-    rootdist = get_rootdist_matrix()
+    rootdist = get_rootdist_matrix(7)
     questionmark_features = extract_questionmark_features(data_split, headers.index('articleHeadline'))
     bow = BoW(ngram_range=(1, 2), max_features=90, stop_words=None)
     tf = bow.fit(x)
 
-    print("Rootdist grid_search")
-    ppdb_alignment_feature = sparse.csr_matrix(get_ppdb_alignment_feature())
-    crossval_grid_search(y, ids, min_rootdist=3, max_rootdist=10, bow=tf, ppdb=ppdb_alignment_feature, questionmark_features=questionmark_features)
-
+    # print("Rootdist grid_search")
+    # ppdb_alignment_feature = sparse.csr_matrix(get_ppdb_alignment_feature())
+    # crossval_grid_search(y, ids, min_rootdist=100, max_rootdist=100, bow=tf, ppdb=ppdb_alignment_feature, questionmark_features=questionmark_features)
+    #
     variance_plot_cv(ids, y, rootdist, tf, questionmark_features, range(2, 10))
     print("Questionmark only")
     questionmark_only(ids, y, questionmark_features, 10, True)
     print("BoW with Rootdist")
     bow_rootdist(ids, y, rootdist, tf, 10, True)
-    print("All features")
-    combined_crossval(ids, y, rootdist, tf, questionmark_features, 10, False)
+    combined_crossval(ids, y, rootdist, tf, questionmark_features, 7)

@@ -3,10 +3,9 @@ from parse.corenlp_parse import *
 from scipy import sparse
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
 
-from bow_analysis import add_question_mark_feature, logistic_regression
-from cross_val import cv_fold_generator
+from bow_analysis import add_question_mark_feature
+from classification import logistic_regression, cv_fold_generator
 
 DATA_PATH = './data/url-versions-2015-06-14-clean.csv'
 
@@ -77,8 +76,18 @@ def crossval_grid_search(target, ids, min_rootdist=1, max_rootdist=200, step=1, 
         res.append([logistic_regression(combined, target, custom_folds, regularization), i])
 
     acc = np.asarray([[a[0][0], a[1]] for a in res])
-    print("Max acc without question at default_dist: ", acc[np.argmax(acc[:, 0]), 1])
-    plt.plot(acc[:, 1], acc[:, 0])
+    f1 = np.asarray([[a[0][1], a[1]] for a in res])
+    recall = np.asarray([[a[0][2], a[1]] for a in res])
+    precision = np.asarray([[a[0][3], a[1]] for a in res])
+    print("Max acc without question at default_dist: ", acc[np.argmax(acc[:, 0]), 1], " ", np.max(acc[:, 0]))
+    print("Max f1 without question at default_dist: ", f1[np.argmax(f1[:, 0]), 1], " ", np.max(f1[:, 0]))
+    print("Max recall without question at default_dist: ", recall[np.argmax(recall[:, 0]), 1], " ", np.max(recall[:, 0]))
+    print("Max precision without question at default_dist: ", precision[np.argmax(precision[:, 0]), 1], " ", np.max(precision[:, 0]))
+    plt.plot(acc[:, 1], acc[:, 0], label='Accuracy')
+    plt.plot(f1[:, 1], f1[:, 0], label='F1-Score')
+    plt.plot(recall[:, 1], recall[:, 0], label='Recall')
+    plt.plot(precision[:, 1], precision[:, 0], label='Precision')
+    plt.legend()
     plt.xlabel("Default rootdist score")
     plt.ylabel("Accuracy")
     plt.show()
