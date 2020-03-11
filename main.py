@@ -2,7 +2,7 @@ import csv
 
 from bow import BoW
 from bow_analysis import plot_2D_data
-from classification import  logistic_regression, logistic_regression_var, svm_rbf, naive_bayes, split_data, cv_fold_generator
+from classification import logistic_regression, logistic_regression_var, svm_rbf, naive_bayes, split_data, cv_fold_generator
 from alignment_score import get_ppdb_alignment_feature
 from rootdist import get_rootdist_matrix, crossval_grid_search
 from scipy import sparse
@@ -247,6 +247,5 @@ if __name__ == "__main__":
     print("BoW with Rootdist")
     bow_rootdist(ids, y, rootdist, tf, 7, True)
     print("All features")
-    combined_crossval(ids, y, rootdist, tf, questionmark_features, 7)
     show_confusion_matrix(y, ['for', 'against', 'observing'], rootdist, questionmark_features)
     combined_crossval(ids, y, rootdist, tf, questionmark_features, 7, True)
