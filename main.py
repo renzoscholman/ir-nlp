@@ -108,6 +108,15 @@ def questionmark_only(claim_ids, target, questionmark, folds=5, do_custom_folds=
         print(logistic_regression(questionmark, target, folds, regularization, 1000000))
 
 
+def ppdb_only(claim_ids, target, ppdb, folds=5, do_custom_folds=True, regularization='l2'):
+    custom_folds = cv_fold_generator(claim_ids, folds)
+    print('accuracy', 'f1_macro', 'recall_macro', 'precision_macro')
+    if do_custom_folds:
+        print(logistic_regression(ppdb, target, custom_folds, regularization, 1000000))
+    else:
+        print(logistic_regression(ppdb, target, folds, regularization, 1000000))
+
+
 def bow_rootdist(claim_ids, target, rootdist_matrix, tf_matrix, folds=5, do_custom_folds=True, regularization='l2'):
     custom_folds = cv_fold_generator(claim_ids, folds)
     data_sparse = sparse.csr_matrix(rootdist_matrix)
@@ -234,12 +243,13 @@ if __name__ == "__main__":
     questionmark_features = extract_questionmark_features(data_split, headers.index('articleHeadline'))
     bow = BoW(ngram_range=(1, 2), max_features=90, stop_words=None)
     tf = bow.fit(x)
+    ppdb_alignment_feature = sparse.csr_matrix(get_ppdb_alignment_feature())
 
     # print("Rootdist grid_search")
-    # ppdb_alignment_feature = sparse.csr_matrix(get_ppdb_alignment_feature())
     # crossval_grid_search(y, ids, min_rootdist=100, max_rootdist=100, bow=tf, ppdb=ppdb_alignment_feature, questionmark_features=questionmark_features)
-    #
     variance_plot_cv(ids, y, rootdist, tf, questionmark_features, range(2, 10))
+    print("PPDB only")
+    ppdb_only(ids, y, ppdb_alignment_feature, 7, True)
     print("K-fold variance plot")
     #variance_plot_cv(ids, y, rootdist, tf, questionmark_features, range(2, 30))
     print("Questionmark only")
