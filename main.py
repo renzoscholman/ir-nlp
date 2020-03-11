@@ -249,7 +249,7 @@ if __name__ == "__main__":
     # crossval_grid_search(y, ids, min_rootdist=100, max_rootdist=100, bow=tf, ppdb=ppdb_alignment_feature, questionmark_features=questionmark_features)
     variance_plot_cv(ids, y, rootdist, tf, questionmark_features, range(2, 10))
     print("PPDB only")
-    ppdb_only(ids, y, ppdb_alignment_feature, 7, True)
+    ppdb_only(ids, y, ppdb_alignment_feature, 10, False)
     print("K-fold variance plot")
     #variance_plot_cv(ids, y, rootdist, tf, questionmark_features, range(2, 30))
     print("Questionmark only")
