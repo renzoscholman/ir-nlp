@@ -57,7 +57,7 @@ def variance_plot_cv(claim_ids, target, rootdist_matrix, tf_matrix, questionmark
     for n_folds in fold_range:
         print(n_folds)
         custom_folds = cv_fold_generator(claim_ids, n_folds)
-        results.append(logistic_regression_var(combined_all, target, custom_folds, regularization, 10000))
+        results.append(logistic_regression_var(combined_all, target, custom_folds, regularization, 1000))
 
     results_arr = np.array(results)
     plt.plot(fold_range, results_arr[:, 0], label='Accuracy')  # Plot accuracy
@@ -65,11 +65,14 @@ def variance_plot_cv(claim_ids, target, rootdist_matrix, tf_matrix, questionmark
     plt.plot(fold_range, results_arr[:, 2], label='Recall')  # Plot recall
     plt.plot(fold_range, results_arr[:, 3], label='Precision')  # Plot precision
     plt.legend()
+    plt.xlabel('Number of folds')
     plt.show()
-    plt.plot(fold_range, results_arr[:, 4], label='Accuracy var.')  # Plot accuracy variance
-    plt.plot(fold_range, results_arr[:, 5], label='F1-Score var.')  # Plot F1-score variance
-    plt.plot(fold_range, results_arr[:, 6], label='Recall var.')  # Plot recall variance
-    plt.plot(fold_range, results_arr[:, 7], label='Precision var.')  # Plot precision variance
+    plt.plot(fold_range, results_arr[:, 4], label='Accuracy variance')  # Plot accuracy variance
+    plt.plot(fold_range, results_arr[:, 5], label='F1-Score variance')  # Plot F1-score variance
+    plt.plot(fold_range, results_arr[:, 6], label='Recall variance')  # Plot recall variance
+    plt.plot(fold_range, results_arr[:, 7], label='Precision variance')  # Plot precision variance
+    plt.ylabel('Variance')
+    plt.xlabel('Number of folds')
     plt.legend()
     plt.show()
 
@@ -136,14 +139,15 @@ if __name__ == "__main__":
     bow = BoW(ngram_range=(1, 2), max_features=90, stop_words=None)
     tf = bow.fit(x)
 
-    variance_plot_cv(ids, y, rootdist, tf, questionmark_features, range(2, 10))
+    print("K-fold variance plot")
+    #variance_plot_cv(ids, y, rootdist, tf, questionmark_features, range(2, 30))
     print("Questionmark only")
-    questionmark_only(ids, y, questionmark_features, 10, True)
+    questionmark_only(ids, y, questionmark_features, 7, True)
     print("Rootdist without questionmark")
     crossval_rootdist(rootdist, y, ids, None)
     print("Rootdist with questionmark")
     crossval_rootdist(rootdist, y, ids, questionmark_features)
     print("BoW with Rootdist")
-    bow_rootdist(ids, y, rootdist, tf, 10, True)
+    bow_rootdist(ids, y, rootdist, tf, 7, True)
     print("All features")
-    combined_crossval(ids, y, rootdist, tf, questionmark_features, 10, False)
+    combined_crossval(ids, y, rootdist, tf, questionmark_features, 7, True)
