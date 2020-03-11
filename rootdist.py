@@ -1,25 +1,26 @@
 from parse.corenlp_parse import *
 
 from scipy import sparse
+import matplotlib.pyplot as plt
 import numpy as np
 
-from bow_grid_search import add_question_mark_feature, logistic_regression
-from cross_val import cv_fold_generator
+from bow_analysis import add_question_mark_feature
+from classification import logistic_regression, cv_fold_generator
 
 DATA_PATH = './data/url-versions-2015-06-14-clean.csv'
 
-def get_rootdist_matrix():
+def get_rootdist_matrix(default_score=100):
     data = get_dataset(DATA_PATH)
     stanparse_depths = get_stanparse_depths('data/pickled')
     stanparse_data = get_stanparse_data('data/pickled')
 
     mat = np.zeros((len(data), 2))
-    min_hedge_depth = min_refute_depth = 100
+    min_hedge_depth = min_refute_depth = default_score
     for i, (_, s) in enumerate(data.iterrows()):
         try:
             sp_data = stanparse_data[s.articleId]
             sp_depths = stanparse_depths[s.articleId]
-            min_hedge_depth = min_refute_depth = 100
+            min_hedge_depth = min_refute_depth = default_score
 
             for j, sentence in enumerate(sp_data.sentences):
                 grph, grph_labels, grph_depths = sp_depths[j]
@@ -54,3 +55,42 @@ def crossval_rootdist(data, target, ids, questionmark_features=None, folds=10, d
         print(logistic_regression(combined, target, custom_folds))
     else:
         print(logistic_regression(combined, target, folds))
+
+def crossval_grid_search(target, ids, min_rootdist=1, max_rootdist=200, step=1, ppdb=None, questionmark_features=None, bow=None, folds=10):
+    default_score = range(min_rootdist, max_rootdist+1, step)
+    res = []
+    count = 0
+    custom_folds = cv_fold_generator(ids, folds)
+    for i in default_score:
+        data = sparse.csc_matrix(get_rootdist_matrix(i))
+        print("At ", round((count * 100.0) / (len(default_score)), 2), "%")
+        count += 1
+        combined = sparse.hstack((
+            data,
+            questionmark_features,
+            bow,
+            ppdb
+        ))
+
+        regularization = 'l2'
+        res.append([logistic_regression(combined, target, custom_folds, regularization), i])
+
+    acc = np.asarray([[a[0][0], a[1]] for a in res])
+    f1 = np.asarray([[a[0][1], a[1]] for a in res])
+    recall = np.asarray([[a[0][2], a[1]] for a in res])
+    precision = np.asarray([[a[0][3], a[1]] for a in res])
+    print("Max acc without question at default_dist: ", acc[np.argmax(acc[:, 0]), 1], " ", np.max(acc[:, 0]))
+    print("Max f1 without question at default_dist: ", f1[np.argmax(f1[:, 0]), 1], " ", np.max(f1[:, 0]))
+    print("Max recall without question at default_dist: ", recall[np.argmax(recall[:, 0]), 1], " ", np.max(recall[:, 0]))
+    print("Max precision without question at default_dist: ", precision[np.argmax(precision[:, 0]), 1], " ", np.max(precision[:, 0]))
+    plt.plot(acc[:, 1], acc[:, 0], label='Accuracy')
+    plt.plot(f1[:, 1], f1[:, 0], label='F1-Score')
+    plt.plot(recall[:, 1], recall[:, 0], label='Recall')
+    plt.plot(precision[:, 1], precision[:, 0], label='Precision')
+    plt.legend()
+    plt.xlabel("Default rootdist score")
+    plt.ylabel("Accuracy")
+    plt.show()
+
+    return res
+
